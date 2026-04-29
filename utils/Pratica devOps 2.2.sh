@@ -1,6 +1,4 @@
 !/bin/bash
-
- Esse loop mantém o menu rodando até você sair
 while true; do
 
      echo "      FILE MANAGER"
@@ -11,8 +9,7 @@ while true; do
     echo "5 - Alterar permissões"
     echo "0 - Sair"
      
-
-    read -p "Escolha uma opção: " opcao
+read -p "Escolha uma opção: " opcao
 
     case $opcao in
 
@@ -55,10 +52,9 @@ while true; do
 
          Sair   
         0)
-            echo "Saindo... até mais 👋"
+            echo "Saindo... até mais "
             break
             ;;
-
         Qualquer coisa inválida
         
             echo "Opção inválida, tenta de novo."
