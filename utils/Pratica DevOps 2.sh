@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Cara, primeira coisa: ver se passou o arquivo
 if [ $# -ne 1 ]; then
     echo "Uso: $0 <arquivo_log>"
     exit 1
@@ -8,7 +7,6 @@ fi
 
 LOG_FILE="$1"
 
-# Se o arquivo não existir, nem adianta continuar
 if [ ! -f "$LOG_FILE" ]; then
     echo "Arquivo não encontrado!"
     exit 1
