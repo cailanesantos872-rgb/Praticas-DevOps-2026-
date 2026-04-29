@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 LOG_FILE="apache.log"
 if [ ! -f "$LOG_FILE" ]; then
   echo "Arquivo apache.log não encontrado!"
@@ -8,19 +8,17 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="log_analysis_$TIMESTAMP"
 mkdir -p "$OUTPUT_DIR"
 echo "Analisando logs..."
-# 1. IPs únicos
+1. IPs únicos
 awk '{print $1}' "$LOG_FILE" | sort | uniq > "$OUTPUT_DIR/1_unique_ips.txt"
-# 2. Métodos HTTP
+2. Métodos HTTP
 awk -F\" '{print $2}' "$LOG_FILE" | awk '{print $1}' | sort | uniq -c | sort -nr > "$OUTPUT_DIR/2_http_methods.txt"
-# 3. Métodos perigosos (DELETE, PUT)
+3. Métodos perigosos (DELETE, PUT)
 grep -E '"(DELETE|PUT)' "$LOG_FILE" > "$OUTPUT_DIR/3_dangerous_methods.txt"
-# 4. URLs acessadas
+URLs acessadas
 awk -F\" '{print $2}' "$LOG_FILE" | awk '{print $2}' | sort | uniq -c | sort -nr > "$OUTPUT_DIR/4_urls.txt"
-
-
-# 5. Top 10 IPs
+5. Top 10 IPs
 awk '{print $1}' "$LOG_FILE" | sort | uniq -c | sort -nr | head -10 > "$OUTPUT_DIR/5_top_ips.txt"
-# Relatório consolidado
+Relatório consolidado
 REPORT="$OUTPUT_DIR/report.txt"
 echo "===== RELATÓRIO DE ANÁLISE DE LOGS =====" > "$REPORT"
 echo "Data: $(date)" >> "$REPORT"
