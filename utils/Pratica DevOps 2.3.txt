@@ -1,0 +1,15 @@
+Escolha do servidor web (Apache vs Nginx)
+
+Para a plataforma ScreenMatch, que vai ter muitos acessos e conteúdo estático (HTML, CSS, JS, imagens e vídeos), a melhor escolha é o Nginx.
+
+Comparação rápida
+Apache: funciona bem, mas usa mais recursos do servidor e não é tão eficiente com muitos acessos ao mesmo tempo.
+Nginx: é mais leve, rápido e feito justamente para aguentar alto tráfego, principalmente com arquivos estáticos.
+
+Justificativa
+
+O Nginx é a melhor opção porque consegue lidar com muitas conexões ao mesmo tempo sem sobrecarregar o servidor, além de entregar arquivos estáticos de forma mais rápida e eficiente.
+
+Conclusão
+
+Por isso, para a ScreenMatch, o Nginx é mais indicado, já que oferece melhor desempenho, estabilidade e escalabilidade em ambientes com muito acesso.
