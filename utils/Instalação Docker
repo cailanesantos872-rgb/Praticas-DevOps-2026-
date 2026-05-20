@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  webapp:
+    build: 
+    container_name: webapp_service
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - DB_HOST=db
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_database
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=sua_senha_segura
+      - MYSQL_DATABASE=app_legacy
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
