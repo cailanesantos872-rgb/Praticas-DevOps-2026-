@@ -4,29 +4,25 @@
 # Professor: Eder Pereira dos Santos
 
 
-## 01. Diferença Conceitual entre os Componentes do Docker
+ 01. Diferença Conceitual entre os Componentes do Docker
 
 No ecossistema Docker, os componentes operam em uma arquitetura cliente-servidor para gerenciar o ciclo de vida dos containers:
 
-*   **Docker Client:** É a interface de linha de comando (`docker ...`) que o usuário utiliza para interagir com o Docker. Ele traduz os comandos digitados pelo usuário em requisições de API REST e as envia para o Docker Daemon. O cliente não executa os containers diretamente; ele apenas emite as ordens.
-*   **Docker Daemon (`dockerd`):** É o servidor que roda em background no sistema operacional. Ele escuta as requisições da API do Docker Client e gerencia os objetos do Docker de forma pesada, sendo o responsável direto por baixar imagens, criar, iniciar, pausar e destruir containers, além de gerenciar redes e volumes.
-*   **Docker Engine:** É a aplicação completa que engloba o Docker Daemon, a API REST que define como as ferramentas interagem com ele, e o Docker Client. É o motor modular do Docker instalado na máquina.
-*   **Docker Registry:** É um sistema de armazenamento e distribuição centralizado para imagens Docker (como o Docker Hub). Quando você precisa de uma imagem que não está localmente, o Docker Daemon se conecta a um Registry para baixá-la.
+Docker Client:** É a interface de linha de comando (`docker ...`) que o usuário utiliza para interagir com o Docker. Ele traduz os comandos digitados pelo usuário em requisições de API REST e as envia para o Docker Daemon. O cliente não executa os containers diretamente; ele apenas emite as ordens.
+Docker Daemon (`dockerd`):** É o servidor que roda em background no sistema operacional. Ele escuta as requisições da API do Docker Client e gerencia os objetos do Docker de forma pesada, sendo o responsável direto por baixar imagens, criar, iniciar, pausar e destruir containers, além de gerenciar redes e volumes.
+Docker Engine:** É a aplicação completa que engloba o Docker Daemon, a API REST que define como as ferramentas interagem com ele, e o Docker Client. É o motor modular do Docker instalado na máquina.
+Docker Registry:** É um sistema de armazenamento e distribuição centralizado para imagens Docker (como o Docker Hub). Quando você precisa de uma imagem que não está localmente, o Docker Daemon se conecta a um Registry para baixá-la.
+Relação entre eles:O usuário digita um comando no **Docker Client**, que envia uma requisição para o **Docker Daemon** (dentro do **Docker Engine**). Se o comando exigir uma imagem que não está na máquina, o Daemon busca e baixa essa imagem de um **Docker Registry** para então criar e executar o container localmente.
 
-**Relação entre eles:** O usuário digita um comando no **Docker Client**, que envia uma requisição para o **Docker Daemon** (dentro do **Docker Engine**). Se o comando exigir uma imagem que não está na máquina, o Daemon busca e baixa essa imagem de um **Docker Registry** para então criar e executar o container localmente.
-
----
-
-## 02. Camadas (Layers) em Imagens Docker e sua Eficiência
+02. Camadas (Layers) em Imagens Docker e sua Eficiência
 
 As imagens Docker são estruturadas como uma pilha de camadas de leitura compartilhada (Read-Only). Cada instrução no arquivo de configuração (`Dockerfile`) cria uma nova camada imutável que representa uma alteração no sistema de arquivos.
 
-*   **O que acontece no `docker pull`:** O Docker não baixa a imagem como um bloco único de arquivo. Ele analisa o manifesto da imagem e faz o download de cada camada individualmente em paralelo. Se você já possuir alguma daquelas camadas específicas no seu host, o download dela é ignorado.
-*   **Reutilização de camadas:** Se duas imagens diferentes utilizam a mesma base (por exemplo, ambas começam com `FROM ubuntu:22.04`), o Docker baixa as camadas do Ubuntu apenas uma vez. A segunda imagem reaproveitará essas camadas locais idênticas, aplicando apenas as camadas novas e exclusivas dela por cima.
-*   **Impacto no tamanho e tempo:** Esse conceito é o pilar da eficiência do Docker. Ele reduz drasticamente o espaço de armazenamento em disco do servidor e o tempo de download/upload na rede. Se uma atualização de código altera apenas a última camada de uma aplicação de 500MB, apenas alguns kilobytes correspondentes àquela alteração específica trafegarão pela rede e serão salvos no disco.
+O que acontece no `docker pull`:O Docker não baixa a imagem como um bloco único de arquivo. Ele analisa o manifesto da imagem e faz o download de cada camada individualmente em paralelo. Se você já possuir alguma daquelas camadas específicas no seu host, o download dela é ignorado.
+Reutilização de camadas:Se duas imagens diferentes utilizam a mesma base (por exemplo, ambas começam com `FROM ubuntu:22.04`), o Docker baixa as camadas do Ubuntu apenas uma vez. A segunda imagem reaproveitará essas camadas locais idênticas, aplicando apenas as camadas novas e exclusivas dela por cima.
+Impacto no tamanho e tempo:Esse conceito é o pilar da eficiência do Docker. Ele reduz drasticamente o espaço de armazenamento em disco do servidor e o tempo de download/upload na rede. Se uma atualização de código altera apenas a última camada de uma aplicação de 500MB, apenas alguns kilobytes correspondentes àquela alteração específica trafegarão pela rede e serão salvos no disco.
 
-
-## 03. Tabela de Comandos Docker e suas Descrições Técnicas
+03. Tabela de Comandos Docker e suas Descrições Técnicas
 
 | Comando | Descrição Técnica |
 | `docker run --help` | Exibe a documentação de ajuda e a lista de todas as flags/opções disponíveis para o comando `docker run`. |
@@ -46,13 +42,13 @@ As imagens Docker são estruturadas como uma pilha de camadas de leitura compart
 | `docker rm [ID/NOME]` | Remove permanentemente o container especificado do disco do host (o container precisa estar parado para que este comando funcione por padrão). |
 
 
-## 04. Análise Detalhada do Comando `docker run`
+04. Análise Detalhada do Comando `docker run`
 
 O comando executa um container com configurações específicas de rede, persistência e variáveis de ambiente:
 
-*   `docker run`: Comando base para criar e iniciar um novo container a partir de uma imagem.
-*   `-d`: Modo *detached* (segundo plano). Executa o container em background e libera o terminal do usuário.
-*   `--name minha-app`: Define um nome amigável e único para o container no host, permitindo referenciá-lo como "minha-app" em vez de usar o ID hash.
+docker run`: Comando base para criar e iniciar um novo container a partir de uma imagem.
+ `-d`: Modo *detached* (segundo plano). Executa o container em background e libera o terminal do usuário.
+  `--name minha-app`: Define um nome amigável e único para o container no host, permitindo referenciá-lo como "minha-app" em vez de usar o ID hash.
 *   `-p 3000:3000`: Mapeamento de portas. Vincula a porta `3000` da máquina física (host) à porta `3000` interna do container (`host:container`).
 *   `-v /home/user/app:/app`: Bind Mount (Volume). Mapeia o diretório local `/home/user/app` para dentro do container em `/app`. Alterações no código na máquina física refletem imediatamente no container.
 *   `-e DB_HOST=localhost`: Injeta uma variável de ambiente (`DB_HOST`) com o valor `localhost` para consumo interno da aplicação.
@@ -60,70 +56,62 @@ O comando executa um container com configurações específicas de rede, persist
 *   `node:14-alpine`: A imagem base utilizada para construir o container (Node.js versão 14 rodando sobre uma distribuição Alpine Linux, que é ultraleve).
 *   `npm start`: O comando que substitui o padrão da imagem e roda como o processo principal (PID 1) do container, iniciando o servidor Node.js.
 
----
+05. Respostas sobre o Ciclo de Vida do Container
 
-## 05. Respostas sobre o Ciclo de Vida do Container
-
-*   **a) Por que o container parou imediatamente com status "Exited (0)"?**
+ a) Por que o container parou imediatamente com status "Exited (0)"?**
     Um container Docker permanece ativo apenas enquanto o seu processo principal (PID 1) estiver em execução. A imagem do `ubuntu` padrão executa por padrão o shell `/bin/bash`. Como o comando foi rodado sem interatividade e sem um script contínuo anexado, o Bash detectou que não havia tarefas a fazer e finalizou com sucesso (código 0), encerrando o container no mesmo milissegundo.
 
-*   **b) Como modificar o comando para que o container permaneça em execução por 1 hora?**
+*b) Como modificar o comando para que o container permaneça em execução por 1 hora?**
     Devemos passar um comando de longa duração como argumento principal:
     ```bash
     docker run -d ubuntu sleep 1h
-    c) Qual comando ela usaria para acessar o terminal deste container (se ele estivesse em execução)?
+c) Qual comando ela usaria para acessar o terminal deste container (se ele estivesse em execução)?
 docker exec -it [ID_OU_NOME_DO_CONTAINER] bash
 
-  ## 06. Comandos para Operações no Container "meu-nginx" * **a) Ver os logs em tempo real das últimas 20 linhas:** ```bash docker logs -f --tail 20 meu-nginx
+06. Comandos para Operações no Container "meu-nginx" * **a) Ver os logs em tempo real das últimas 20 linhas:** ```bash docker logs -f --tail 20 meu-nginx
 
 b) Executar um shell bash dentro do container:
 
 docker exec -it meu-nginx bash
 
-**c) Verificar quais portas estão mapeadas para este container:** ```bash docker port meu-nginx
+c) Verificar quais portas estão mapeadas para este container:** ```bash docker port meu-nginx
 
 d) Parar o container graciosamente e depois removê-lo:
 
 docker stop meu-nginx && docker rm meu-nginx
 
-**e) Pausar todas as operações do container e depois despausar:** ```bash docker pause meu-nginx docker unpause meu-nginx ```
+e) Pausar todas as operações do container e depois despausar:** ```bash docker pause meu-nginx docker unpause meu-nginx ```
 
 07. Dockerfile (Aplicação Python Flask)
 Salve o código abaixo em um arquivo chamado exatamente Dockerfile (sem extensão):
 
-# Use python:3.9-slim como imagem base
+Use python:3.9-slim como imagem base
 FROM python:3.9-slim
-
-# Defina o diretório de trabalho como /app
+ Defina o diretório de trabalho como /app
 WORKDIR /app
-
-# Copie o arquivo requirements.txt e instale as dependências
+ Copie o arquivo requirements.txt e instale as dependências
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copie todo o código fonte para /app
+Copie todo o código fonte para /app
 COPY . .
 
-# Defina a variável de ambiente FLASK_APP=app.py
+Defina a variável de ambiente FLASK_APP=app.py
 ENV FLASK_APP=app.py
-
-# Exponha a porta 5000
+Exponha a porta 5000
 EXPOSE 5000
-
-# O comando de inicialização deve ser flask run --host=0.0.0.0
+O comando de inicialização deve ser flask run --host=0.0.0.0
 CMD ["flask", "run", "--host=0.0.0.0"]
-
 
 08. Comandos de Build e Execução da Imagem Flask
 No terminal, no mesmo diretório onde salvou o Dockerfile acima, execute os seguintes comandos:
 
-# a) Construir a imagem com o nome "minha-flask-app" e tag "1.0"
+a) Construir a imagem com o nome "minha-flask-app" e tag "1.0"
 docker build -t minha-flask-app:1.0 .
 
-# b) Listar as imagens para confirmar que foi criada
+b) Listar as imagens para confirmar que foi criada
 docker images | grep minha-flask-app
 
-# c) Executar um container a partir desta imagem mapeando a porta 5000 do host para a porta 5000 do container, em modo detached
+c) Executar um container a partir desta imagem mapeando a porta 5000 do host para a porta 5000 do container, em modo detached
 docker run -d -p 5000:5000 --name container-flask minha-flask-app:1.0
 
 09. Análise do Comando Dinâmico Python
@@ -165,7 +153,7 @@ services:
     networks:
       - rede-infra
 
-  # Serviço do Banco de Dados Relacional
+  Serviço do Banco de Dados Relacional
   db:
     image: mysql:8.0
     container_name: mysql_db
@@ -182,7 +170,7 @@ services:
     networks:
       - rede-infra
 
-  # Serviço de Cache em Memória
+  Serviço de Cache em Memória
   redis:
     image: redis:7-alpine
     container_name: redis_cache
