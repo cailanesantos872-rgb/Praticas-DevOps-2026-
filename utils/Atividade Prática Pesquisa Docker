@@ -1,0 +1,220 @@
+# ATIVIDADE PRÁTICA COM PESQUISA - DOCKER E DOCKER COMPOSE (V2)
+# Disciplina: Laboratório de Programação para Operação de Infraestrutura de Redes de Computadores - DevOps
+# Aluno: Carlos Alberto e Cailane dos Santos da Silva
+# Professor: Eder Pereira dos Santos
+
+
+## 01. Diferença Conceitual entre os Componentes do Docker
+
+No ecossistema Docker, os componentes operam em uma arquitetura cliente-servidor para gerenciar o ciclo de vida dos containers:
+
+*   **Docker Client:** É a interface de linha de comando (`docker ...`) que o usuário utiliza para interagir com o Docker. Ele traduz os comandos digitados pelo usuário em requisições de API REST e as envia para o Docker Daemon. O cliente não executa os containers diretamente; ele apenas emite as ordens.
+*   **Docker Daemon (`dockerd`):** É o servidor que roda em background no sistema operacional. Ele escuta as requisições da API do Docker Client e gerencia os objetos do Docker de forma pesada, sendo o responsável direto por baixar imagens, criar, iniciar, pausar e destruir containers, além de gerenciar redes e volumes.
+*   **Docker Engine:** É a aplicação completa que engloba o Docker Daemon, a API REST que define como as ferramentas interagem com ele, e o Docker Client. É o motor modular do Docker instalado na máquina.
+*   **Docker Registry:** É um sistema de armazenamento e distribuição centralizado para imagens Docker (como o Docker Hub). Quando você precisa de uma imagem que não está localmente, o Docker Daemon se conecta a um Registry para baixá-la.
+
+**Relação entre eles:** O usuário digita um comando no **Docker Client**, que envia uma requisição para o **Docker Daemon** (dentro do **Docker Engine**). Se o comando exigir uma imagem que não está na máquina, o Daemon busca e baixa essa imagem de um **Docker Registry** para então criar e executar o container localmente.
+
+---
+
+## 02. Camadas (Layers) em Imagens Docker e sua Eficiência
+
+As imagens Docker são estruturadas como uma pilha de camadas de leitura compartilhada (Read-Only). Cada instrução no arquivo de configuração (`Dockerfile`) cria uma nova camada imutável que representa uma alteração no sistema de arquivos.
+
+*   **O que acontece no `docker pull`:** O Docker não baixa a imagem como um bloco único de arquivo. Ele analisa o manifesto da imagem e faz o download de cada camada individualmente em paralelo. Se você já possuir alguma daquelas camadas específicas no seu host, o download dela é ignorado.
+*   **Reutilização de camadas:** Se duas imagens diferentes utilizam a mesma base (por exemplo, ambas começam com `FROM ubuntu:22.04`), o Docker baixa as camadas do Ubuntu apenas uma vez. A segunda imagem reaproveitará essas camadas locais idênticas, aplicando apenas as camadas novas e exclusivas dela por cima.
+*   **Impacto no tamanho e tempo:** Esse conceito é o pilar da eficiência do Docker. Ele reduz drasticamente o espaço de armazenamento em disco do servidor e o tempo de download/upload na rede. Se uma atualização de código altera apenas a última camada de uma aplicação de 500MB, apenas alguns kilobytes correspondentes àquela alteração específica trafegarão pela rede e serão salvos no disco.
+
+
+## 03. Tabela de Comandos Docker e suas Descrições Técnicas
+
+| Comando | Descrição Técnica |
+| `docker run --help` | Exibe a documentação de ajuda e a lista de todas as flags/opções disponíveis para o comando `docker run`. |
+| `docker ps` | Lista os containers que estão atualmente em execução no host, mostrando IDs, imagens, portas e status. |
+| `docker run ubuntu sleep 1d` | Cria e inicia um container a partir da imagem do Ubuntu, executando o comando `sleep 1d` (pausa o processo principal por 1 dia) para mantê-lo ativo. |
+| `docker container ls -a` | Comando moderno equivalente ao `docker ps -a`; lista absolutamente todos os containers do host (ativos e parados). |
+| `docker run ubuntu` | Baixa a imagem do Ubuntu (se não existir localmente) e inicia o container. Como não há processo interativo ou comando longo especificado, ele finaliza imediatamente. |
+| `docker pull ubuntu` | Baixa a imagem oficial do Ubuntu do Registry (Docker Hub) para a máquina local, sem iniciar nenhum container. |
+| `docker ps -a` | Lista todos os containers existentes na máquina, independentemente de estarem em execução ou parados. |
+| `docker stop [ID/NOME]` | Envia um sinal `SIGTERM` para o processo principal do container para que ele salve seu estado e finalize graciosamente. Se não parar em 10s, envia um `SIGKILL`. |
+| `docker start [ID/NOME]` | Inicia um ou mais containers que foram criados previamente mas encontram-se atualmente parados, mantendo suas modificações internas. |
+| `docker exec` | Permite rodar um novo comando específico dentro de um container que já está em execução. |
+| `docker exec -it [ID/NOME]` | Abre uma interface de execução dentro do container ativo. `-i` mantém o canal de entrada aberto (interativo) e `-t` aloca um terminal virtual (TTY). |
+| `docker exec -it [ID/NOME] bash` | Abre um terminal interativo utilizando o interpretador de comandos Bash dentro do container em execução especificado. |
+| `docker pause [ID/NOME]` | Suspende temporariamente todos os processos em execução dentro do container utilizando o mecanismo de cgroups (congelamento de CPU). |
+| `docker unpause [ID/NOME]` | Retoma a execução normal de todos os processos que foram previamente suspensos pelo comando `docker pause`. |
+| `docker rm [ID/NOME]` | Remove permanentemente o container especificado do disco do host (o container precisa estar parado para que este comando funcione por padrão). |
+
+
+## 04. Análise Detalhada do Comando `docker run`
+
+O comando executa um container com configurações específicas de rede, persistência e variáveis de ambiente:
+
+*   `docker run`: Comando base para criar e iniciar um novo container a partir de uma imagem.
+*   `-d`: Modo *detached* (segundo plano). Executa o container em background e libera o terminal do usuário.
+*   `--name minha-app`: Define um nome amigável e único para o container no host, permitindo referenciá-lo como "minha-app" em vez de usar o ID hash.
+*   `-p 3000:3000`: Mapeamento de portas. Vincula a porta `3000` da máquina física (host) à porta `3000` interna do container (`host:container`).
+*   `-v /home/user/app:/app`: Bind Mount (Volume). Mapeia o diretório local `/home/user/app` para dentro do container em `/app`. Alterações no código na máquina física refletem imediatamente no container.
+*   `-e DB_HOST=localhost`: Injeta uma variável de ambiente (`DB_HOST`) com o valor `localhost` para consumo interno da aplicação.
+*   `--restart unless-stopped`: Política de reinicialização. O Docker reiniciará automaticamente o container se ele falhar ou se o próprio serviço do Docker for reiniciado, a menos que o usuário o pare manualmente de propósito.
+*   `node:14-alpine`: A imagem base utilizada para construir o container (Node.js versão 14 rodando sobre uma distribuição Alpine Linux, que é ultraleve).
+*   `npm start`: O comando que substitui o padrão da imagem e roda como o processo principal (PID 1) do container, iniciando o servidor Node.js.
+
+---
+
+## 05. Respostas sobre o Ciclo de Vida do Container
+
+*   **a) Por que o container parou imediatamente com status "Exited (0)"?**
+    Um container Docker permanece ativo apenas enquanto o seu processo principal (PID 1) estiver em execução. A imagem do `ubuntu` padrão executa por padrão o shell `/bin/bash`. Como o comando foi rodado sem interatividade e sem um script contínuo anexado, o Bash detectou que não havia tarefas a fazer e finalizou com sucesso (código 0), encerrando o container no mesmo milissegundo.
+
+*   **b) Como modificar o comando para que o container permaneça em execução por 1 hora?**
+    Devemos passar um comando de longa duração como argumento principal:
+    ```bash
+    docker run -d ubuntu sleep 1h
+    c) Qual comando ela usaria para acessar o terminal deste container (se ele estivesse em execução)?
+docker exec -it [ID_OU_NOME_DO_CONTAINER] bash
+
+  ## 06. Comandos para Operações no Container "meu-nginx" * **a) Ver os logs em tempo real das últimas 20 linhas:** ```bash docker logs -f --tail 20 meu-nginx
+
+b) Executar um shell bash dentro do container:
+
+docker exec -it meu-nginx bash
+
+**c) Verificar quais portas estão mapeadas para este container:** ```bash docker port meu-nginx
+
+d) Parar o container graciosamente e depois removê-lo:
+
+docker stop meu-nginx && docker rm meu-nginx
+
+**e) Pausar todas as operações do container e depois despausar:** ```bash docker pause meu-nginx docker unpause meu-nginx ```
+
+07. Dockerfile (Aplicação Python Flask)
+Salve o código abaixo em um arquivo chamado exatamente Dockerfile (sem extensão):
+
+# Use python:3.9-slim como imagem base
+FROM python:3.9-slim
+
+# Defina o diretório de trabalho como /app
+WORKDIR /app
+
+# Copie o arquivo requirements.txt e instale as dependências
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie todo o código fonte para /app
+COPY . .
+
+# Defina a variável de ambiente FLASK_APP=app.py
+ENV FLASK_APP=app.py
+
+# Exponha a porta 5000
+EXPOSE 5000
+
+# O comando de inicialização deve ser flask run --host=0.0.0.0
+CMD ["flask", "run", "--host=0.0.0.0"]
+
+
+08. Comandos de Build e Execução da Imagem Flask
+No terminal, no mesmo diretório onde salvou o Dockerfile acima, execute os seguintes comandos:
+
+# a) Construir a imagem com o nome "minha-flask-app" e tag "1.0"
+docker build -t minha-flask-app:1.0 .
+
+# b) Listar as imagens para confirmar que foi criada
+docker images | grep minha-flask-app
+
+# c) Executar um container a partir desta imagem mapeando a porta 5000 do host para a porta 5000 do container, em modo detached
+docker run -d -p 5000:5000 --name container-flask minha-flask-app:1.0
+
+09. Análise do Comando Dinâmico Python
+O comando em análise é: docker run --rm python:3.9 python -c "print('Hello Docker')"
+
+Etapas da Execução:
+
+Verificação Local / Pull: O Docker Engine verifica se a imagem python:3.9 está disponível localmente no host. Se não estiver, realiza o docker pull dela a partir do Docker Hub automaticamente.
+
+Criação com Auto-Remoção (--rm): O container é criado a partir da imagem. A flag --rm instrui o Docker Daemon a excluir permanentemente os arquivos e o container do disco assim que a sua execução terminar.
+
+Execução do Processo: O container inicia e roda o comando alternativo sobrescrito: python -c "print('Hello Docker')". O interpretador Python interno compila e exibe a mensagem no terminal do host.
+
+Finalização do Processo: O script do Python imprime a mensagem e finaliza com sucesso. Como o processo principal acabou, o container para sua execução imediatamente.
+
+Remoção Automatizada: O gatilho da flag --rm é acionado e limpa o container da memória e do disco.
+
+Status do container após a execução: O container não constará na lista de containers, nem mesmo no comando docker ps -a, pois seu status final foi de encerramento seguido de autodestruição/remoção completa.
+
+10. Arquivo docker-compose.yml Completo
+Salve o código estruturado abaixo em um arquivo chamado exatamente docker-compose.yml:
+
+version: '3.8'
+
+services:
+  # Serviço WebApp que consome a infraestrutura
+  webapp:
+    build: .
+    container_name: webapp_app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - DB_HOST=db
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+    networks:
+      - rede-infra
+
+  # Serviço do Banco de Dados Relacional
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=infra_root_pass
+      - MYSQL_DATABASE=app_legacy_db
+      - MYSQL_USER=app_user
+      - MYSQL_PASSWORD=app_user_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - dados_mysql:/var/lib/mysql
+    networks:
+      - rede-infra
+
+  # Serviço de Cache em Memória
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - rede-infra
+
+volumes:
+  dados_mysql:
+    driver: local
+
+networks:
+  rede-infra:
+    driver: bridge
+
+11. Comandos de Gerenciamento do Docker Compose
+Baseado no arquivo criado na questão anterior, use estes comandos no terminal da pasta raiz:
+
+a) Qual comando sobe todos os serviços em background?
+docker compose up -d
+b) Qual comando para visualizar os logs de todos os serviços simultaneamente?
+docker compose logs -f
+c) Qual comando executa um shell bash dentro do container do banco de dados?
+bash docker compose exec db bash
+d) Qual comando derruba todos os serviços E remove os containers?
+bash docker compose down.
+
+12. Análise de Problemas e Más Práticas no Docker Compose Fornecido
+Analisando o código proposto, identificam-se os seguintes erros e falhas críticas de arquitetura:
+1. Exposição Crítica de Credenciais em Texto Limpo:** As variáveis de ambiente confidenciais como `DB_PASSWORD=root123` e `API_KEY=...` estão expostas diretamente no arquivo de configuração estrutural. Em um ambiente profissional DevOps, isto é um grave risco de segurança. O correto seria utilizar um arquivo externo isolado de ambiente (`.env`) listado no `.gitignore` ou injetar via Docker Secrets.
+2. Uso da Tag Imprecisa `mysql:latest`:Utilizar a tag `latest` para bancos de dados é perigoso. Se o time do MySQL lançar uma nova versão principal (ex: migrar do 8.0 para o 9.0 automaticamente), o container baixará a nova versão em um próximo deploy, quebrando a compatibilidade com os dados antigos armazenados e parando o sistema de produção. Deve-se fixar uma versão exata (ex: `mysql:8.0`).
+3.Mapeamento Desnecessário e Perigoso da Porta do Banco de Dados (`3306:3306`):** O banco de dados só precisa ser acessado internamente pelo container `app`. Ao mapear a porta `3306` para o Host, o banco de dados fica vulnerável e exposto a ataques vindos da rede externa e internet. A diretiva `ports` deveria ser removida do serviço do MySQL, mantendo o tráfego restrito e protegido à rede interna do Docker.
+4.Ausência de Persistência de Dados (Volume Nomeado no MySQL):O serviço do banco de dados não possui nenhum volume configurado. Se o container do MySQL for reiniciado, recriado ou atualizado, absolutamente todos os dados inseridos pelos usuários serão apagados permanentemente do disco. É obrigatório vincular um volume persistente na pasta `/var/lib/mysql`.
